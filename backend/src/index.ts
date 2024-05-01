@@ -1,7 +1,7 @@
 import FireFly, { FireFlySubscriptionBase } from "@hyperledger/firefly-sdk";
 import express from "express";
 import bodyparser from "body-parser";
-import simplestorage from "../contracts/simple_storage.json";
+import diceguess from "../contracts/dice_guess.json";
 import { v4 as uuidv4 } from "uuid";
 
 const PORT = 4001;
@@ -12,22 +12,38 @@ const firefly = new FireFly({
   host: HOST,
   namespace: NAMESPACE,
 });
+require("dotenv").config()
 
 let apiName: string;
 
 app.use(bodyparser.json());
 
-app.get("/api/value", async (req, res) => {
-  res.send(await firefly.queryContractAPI(apiName, "get", {}));
-});
-
-app.post("/api/value", async (req, res) => {
-  try {
-    const fireflyRes = await firefly.invokeContractAPI(apiName, "set", {
+app.post("/api/getTokens", async (req, res) => {
+  try {   
+    const fireflyRes = await firefly.invokeContractAPI(apiName, "transferMoneyToWinner", {
       input: {
-        x: req.body.x,
+        amount: req.body.currentBetBalance,
       },
     });
+    res.status(202).send({
+      id: fireflyRes.id,
+    });
+  } catch (e: any) {
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
+
+app.post("/api/sendGuess", async (req, res) => {
+  try {
+    const fireflyRes = await firefly.invokeContractAPI(apiName, "sendGuess", {
+      input: {
+        guess: req.body.guess,
+        betAmount: req.body.betAmount
+      },
+    });
+    
     res.status(202).send({
       id: fireflyRes.id,
     });
@@ -42,9 +58,9 @@ async function init() {
   const deployRes = await firefly.deployContract(
     {
       definition:
-        simplestorage.contracts["simple_storage.sol:SimpleStorage"].abi,
-      contract: simplestorage.contracts["simple_storage.sol:SimpleStorage"].bin,
-      input: ["0"],
+        diceguess.contracts["dice_guess.sol:DiceGuess"].abi,
+      contract: diceguess.contracts["dice_guess.sol:DiceGuess"].bin,
+      input: [],
     },
     { confirm: true }
   );
@@ -54,9 +70,9 @@ async function init() {
     name: uuidv4(),
     namespace: NAMESPACE,
     version: "1.0",
-    description: "Auto-deployed simple-storage contract",
+    description: "Auto-deployed dice-guess contract",
     input: {
-      abi: simplestorage.contracts["simple_storage.sol:SimpleStorage"].abi,
+      abi: diceguess.contracts["dice_guess.sol:DiceGuess"].abi,
     },
   });
 
@@ -79,21 +95,25 @@ async function init() {
   );
 
   apiName = contractAPI.name;
+  console.log("APINAME", apiName)
 
-  const listener = await firefly.createContractAPIListener(apiName, "Changed", {
-    topic: "changed",
+  await firefly.createContractAPIListener(apiName, "GuessMade", {
+    topic: "guessmade",
+  });
+  await firefly.createContractAPIListener(apiName, "BalanceTransferred", {
+    topic: "balancetransferred",
   });
 
-  firefly.listen(
-    {
-      filter: {
-        events: "blockchain_event_received",
-      },
-    },
-    async (socket, event) => {
-      console.log(event.blockchainEvent?.output);
-    }
-  );
+  // firefly.listen(
+  //   {
+  //     filter: {
+  //       events: "blockchain_event_received",
+  //     },
+  //   },
+  //   async (socket, event) => {
+  //     console.log(event.blockchainEvent?.output);
+  //   }
+  // );
 
   // Start listening
   app.listen(PORT, () =>
