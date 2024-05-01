@@ -2,6 +2,12 @@
 
 Start up the Firefly env using `ff start dev`
 
+To compile a new version of the smart contract, run: 
+```
+solc --combined-json abi,bin dice_guess.sol > dice_guess.json --evm-version paris
+ff deploy ethereum dev dice_guess.json
+```
+
 To run the FE and BE, `cd` into each directory and run:
 
 ```
@@ -9,7 +15,15 @@ npm install
 npm start
 ```
 
-Have a Postman collection setup using your other Firefly keys that can play the game invoking specific smart contract endpoints
+Have a Postman collection setup using your other Firefly keys, which you can get by running `ff accounts list <stack_name>`. You can play the game as different players invoking specific smart contract functions, which will look similar to the below screenshots:
+
+**sendGuess()**
+
+<img width="543" alt="Screenshot 2024-05-01 at 1 01 14 PM" src="https://github.com/chungjud/kaleido-challenge/assets/34102369/272dcaab-a38b-47a7-af70-158a204b5ea2">
+
+**transferMoneyToWinner()**
+
+<img width="590" alt="Screenshot 2024-05-01 at 1 01 19 PM" src="https://github.com/chungjud/kaleido-challenge/assets/34102369/50a235cd-93ba-419a-aee1-818ec387be3a">
 
 ## Developer Challenge
 
