@@ -1,6 +1,7 @@
 # Guess the Dice
 
 Start up the Firefly env using `ff start dev`
+
 To run the FE and BE, `cd` into each directory and run:
 
 ```
